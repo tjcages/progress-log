@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Socials · Architecture</title>
+<!--
+  ========================================================================
+  ARCHITECTURE CANVAS  -  a navigable React Flow canvas of the app,
+  one tab per buildout (the cloudflare admin's /architectures pattern,
+  styled after the Cloudflare dash node UI).
+
+  RENDERER vs DATA: this file is REPO-AGNOSTIC. All content lives in
+  architectures.data.js. LAYOUT IS COMPUTED, never hand-placed:
+    - groups (lanes) render as outline-only containers that FIT their
+      content, with a label + node-count chip
+    - wide buildouts (6+ lanes) wrap onto two rows to use vertical space
+    - uniform cards, uniform gaps, zero overlap by construction
+    - edges attach to single centered entry/exit points per side, so
+      arrows converge (forward = right -> left-in, back = left -> right-in,
+      same lane = bottom -> top-in, next row = bottom -> top-in)
+  Drag nodes freely - a "Reset layout" pill appears to restore the grid.
+
+  Tech: React 18 + @xyflow/react 12 via esm.sh (no build step).
+  ========================================================================
+-->
+<link rel="stylesheet" href="https://esm.sh/@xyflow/react@12.3.5/dist/style.css" />
+<style>
+  :root {
+    --bg: #f7f7f9;
+    --primary: #ffffff;
+    --fg: #1d1d1f;
+    --fg-2: #6e6e73;
+    --fg-3: #a1a1a6;
+    --accent: #28a745;
+    --t-meta: 12px;
+    --t-body: 14px;
+    --t-title: 15px;
+    --r-card: 12px;
+    --r-code: 5px;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --line: #e4e4e9;
+    --line-strong: #cfcfd6;
+    --chip: #f0f0f3;
+    --edge: #c9c9d1;
+    --dots: #e7e7eb;
+    --node-shadow: 0 1px 1px rgba(0,0,0,0.02), 0 4px 12px -6px rgba(0,0,0,0.10);
+    --k-surface: #3f7ce0; --k-engine: #2c9e55; --k-store: #cf8a0a;
+    --k-inlet: #8d63e0; --k-external: #8e8e95; --k-job: #d95757;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --primary: #2c2c2e;
+      --fg: #f5f5f7;
+      --fg-2: #98989d;
+      --fg-3: #636366;
+      --accent: #30d158;
+      --line: #3a3a3e;
+      --line-strong: #4c4c52;
+      --chip: #3a3a3e;
+      --edge: #55555d;
+      --dots: #2a2a2e;
+      --node-shadow: none;
+      --k-surface: #6fa2f5; --k-engine: #4cc474; --k-store: #e3a93c;
+      --k-inlet: #ab8af0; --k-external: #9d9da4; --k-job: #ef7b7b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: var(--t-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Masthead — full-bleed so chrome aligns to one 16px frame ── */
+  .masthead {
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    z-index: 10;
+  }
+  .masthead-inner {
+    padding: 14px 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 12px;
+  }
+  .masthead h1 { font-size: var(--t-title); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .tabs { display: flex; gap: 3px; flex-basis: 100%; }
+  .tabs a { font-size: var(--t-meta); color: var(--fg-2); text-decoration: none; padding: 5px 12px; border-radius: 100px; }
+  .tabs a:hover { color: var(--fg); }
+  .tabs a.active { background: var(--primary); color: var(--fg); font-weight: 600; }
+
+  /* ── Buildout switcher — quiet text; selected = white pill ── */
+  .arch-bar {
+    padding: 4px 16px 8px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+  }
+  .arch-tab {
+    font-family: var(--sans); font-size: var(--t-meta); border: 0; cursor: pointer;
+    color: var(--fg-2); background: transparent; border-radius: 100px; padding: 6px 13px;
+  }
+  .arch-tab:hover { color: var(--fg); }
+  .arch-tab.active { color: var(--fg); font-weight: 600; background: var(--primary); box-shadow: var(--node-shadow); }
+  .arch-meta {
+    padding: 0 16px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  }
+  .arch-desc { font-size: var(--t-meta); color: var(--fg-3); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-left: auto; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; letter-spacing: 0.02em; color: var(--fg-3); }
+  .legend i { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* Explicit height with a floor — never depends on a viewport-height
+     flex chain (embedders can report zero innerHeight). */
+  .canvas-wrap { height: calc(100vh - 158px); min-height: 660px; position: relative; }
+
+  /* ── Groups — outline only, content-fit; label + count chip ── */
+  .lane {
+    width: 100%; height: 100%;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+  }
+  .lane-label {
+    position: absolute; top: 14px; left: 18px;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--fg-2); white-space: nowrap;
+  }
+  .lane-count {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0;
+    color: var(--fg-2); background: var(--chip);
+    border-radius: 6px; padding: 1px 7px; font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Nodes — Cloudflare-dash cards: white, soft shadow, status dot ── */
+  .arch-node {
+    width: 248px; height: 76px; padding: 14px 16px 0;
+    background: var(--primary);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--node-shadow);
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+  .arch-node:hover { border-color: var(--line-strong); }
+  .arch-node.sel {
+    border-color: var(--k);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--k) 13%, transparent);
+  }
+  .arch-node .an-row { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .arch-node .an-label {
+    font-size: 14.5px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .arch-node .an-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--k); flex: none; margin-left: auto; }
+  .arch-node .an-sub {
+    margin-top: 4px; font-size: 12px; color: var(--fg-2); line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kind-surface  { --k: var(--k-surface); }
+  .kind-engine   { --k: var(--k-engine); }
+  .kind-store    { --k: var(--k-store); }
+  .kind-inlet    { --k: var(--k-inlet); }
+  .kind-external { --k: var(--k-external); }
+  .kind-job      { --k: var(--k-job); }
+
+  /* ── Edges — light grey steps with arrowheads, micro labels ── */
+  .react-flow__edge-path { stroke-width: 1.5; }
+  .react-flow__edge-text {
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+    fill: var(--fg-3); font-family: var(--sans);
+  }
+  .react-flow__edge-textbg { fill: var(--bg); }
+  .react-flow__handle { opacity: 0; pointer-events: none; width: 1px; height: 1px; min-width: 0; min-height: 0; }
+
+  /* ── In-canvas chrome — everything on one 16px frame, bottom-aligned ── */
+  .react-flow__panel { margin: 16px; }
+  .react-flow__controls { box-shadow: none; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  .react-flow__controls-button { background: var(--primary); border-bottom: 1px solid var(--line); fill: var(--fg-2); width: 28px; height: 28px; }
+  .react-flow__controls-button:last-child { border-bottom: 0; }
+  .react-flow__controls-button:hover { background: var(--bg); }
+  .hint {
+    position: absolute; right: 16px; bottom: 16px; z-index: 5;
+    display: flex; align-items: center; height: 28px;
+    font-size: 11px; color: var(--fg-3);
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    padding: 0 10px; border-radius: 100px;
+  }
+  .reset-btn {
+    position: absolute; left: 16px; top: 16px; z-index: 5;
+    font-family: var(--sans); font-size: var(--t-meta); font-weight: 600;
+    color: var(--fg-2); background: var(--primary);
+    border: 1px solid var(--line); border-radius: 100px;
+    padding: 6px 13px; cursor: pointer; box-shadow: var(--node-shadow);
+  }
+  .reset-btn:hover { color: var(--fg); border-color: var(--line-strong); }
+
+  /* ── Detail panel — top-right, Cloudflare-bindings style ── */
+  .detail {
+    position: absolute; right: 16px; top: 16px; z-index: 6;
+    width: 340px; max-width: calc(100% - 32px);
+    background: var(--primary); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px; box-shadow: var(--node-shadow);
+  }
+  .detail h3 { margin: 0 0 2px; font-size: var(--t-title); font-weight: 600; letter-spacing: -0.01em; }
+  .detail .kind {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-2);
+  }
+  .detail .kind i { width: 7px; height: 7px; border-radius: 50%; }
+  .detail p { margin: 5px 0 0; font-size: var(--t-meta); color: var(--fg-2); }
+  .detail .refs { margin: 10px 0 0; border-top: 1px solid var(--line); }
+  .detail .refs li {
+    list-style: none; display: block;
+    font-family: var(--mono); font-size: 11px; color: var(--fg-2);
+    padding: 7px 1px; border-bottom: 1px solid var(--line); word-break: break-all;
+  }
+  .detail .refs li:last-child { border-bottom: 0; }
+  .detail ul { padding: 0; }
+  .detail .close { position: absolute; top: 10px; right: 10px; border: 0; background: var(--chip); color: var(--fg-2); border-radius: 100px; width: 22px; height: 22px; cursor: pointer; font-size: 12px; line-height: 1; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <div class="masthead-inner">
+      <h1>Architecture</h1>
+      <nav class="tabs">
+        <a href="index.html">Log</a>
+        <a href="architecture.html" class="active" aria-current="page">Architecture</a>
+      </nav>
+    </div>
+  </div>
+
+  <div id="root"></div>
+
+  <script type="module">
+    import React, { useMemo, useState, useCallback } from "https://esm.sh/react@18.3.1";
+    import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+    import htm from "https://esm.sh/htm@3.1.1";
+    import {
+      ReactFlow, ReactFlowProvider, Background, Controls, Handle, Position, MarkerType,
+    } from "https://esm.sh/@xyflow/react@12.3.5?deps=react@18.3.1,react-dom@18.3.1";
+    import { ARCHITECTURES } from "./architectures.data.js";
+
+    const h = htm.bind(React.createElement);
+
+    // ── The grid — every dimension fixed, every position computed ──────────
+    const NODE_W = 248, NODE_H = 76;       // uniform cards (sized to read)
+    const VGAP = 16;                       // vertical gap between cards
+    const LANE_PAD_X = 18;                 // card inset within a group
+    const LANE_PAD_TOP = 48;               // room for the group label
+    const LANE_PAD_BOTTOM = 18;
+    const LANE_W = NODE_W + LANE_PAD_X * 2;
+    const LANE_GUTTER = 64;                // gap between groups in a row
+    const ROW_GAP = 72;                    // gap between wrapped rows
+    const MAX_PER_ROW = 5;                 // wider than this wraps to 2 rows
+
+    const KINDS = ["surface", "engine", "store", "inlet", "external", "job"];
+
+    function ArchNode({ data, selected }) {
+      return h`
+        <div class="arch-node kind-${data.kind} ${selected ? "sel" : ""}">
+          <${Handle} id="tl" type="target" position=${Position.Left} />
+          <${Handle} id="tt" type="target" position=${Position.Top} />
+          <${Handle} id="tr" type="target" position=${Position.Right} />
+          <${Handle} id="tb" type="target" position=${Position.Bottom} />
+          <${Handle} id="sr" type="source" position=${Position.Right} />
+          <${Handle} id="sl" type="source" position=${Position.Left} />
+          <${Handle} id="sb" type="source" position=${Position.Bottom} />
+          <${Handle} id="st" type="source" position=${Position.Top} />
+          <div class="an-row">
+            <span class="an-label">${data.label}</span>
+            <span class="an-dot"></span>
+          </div>
+          ${data.sub ? h`<div class="an-sub">${data.sub}</div>` : null}
+        </div>`;
+    }
+    function LaneNode({ data }) {
+      return h`
+        <div class="lane">
+          <span class="lane-label">${data.label}<span class="lane-count">${data.count}</span></span>
+        </div>`;
+    }
+    const nodeTypes = { arch: ArchNode, lane: LaneNode };
+
+    // Lay a buildout's groups out on the grid. Groups FIT their content;
+    // wide buildouts wrap onto two rows so vertical space gets used.
+    function toFlow(buildout) {
+      const groups = buildout.groups;
+      const n = groups.length;
+      const rowsCount = n > MAX_PER_ROW ? 2 : 1;
+      const perRow = Math.ceil(n / rowsCount);
+
+      const laneH = (g) =>
+        LANE_PAD_TOP + g.nodes.length * NODE_H + (g.nodes.length - 1) * VGAP + LANE_PAD_BOTTOM;
+
+      // Row Y offsets — each row as tall as its tallest group.
+      const rowY = [0];
+      for (let r = 1; r < rowsCount; r++) {
+        const prev = groups.filter((_, gi) => Math.floor(gi / perRow) === r - 1);
+        rowY[r] = rowY[r - 1] + Math.max(...prev.map(laneH)) + ROW_GAP;
+      }
+
+      const nodes = [];
+      const place = new Map(); // node id → { gi, ri, row, col }
+      groups.forEach((g, gi) => {
+        const row = Math.floor(gi / perRow), col = gi % perRow;
+        const laneX = col * (LANE_W + LANE_GUTTER);
+        const laneY = rowY[row];
+        nodes.push({
+          id: `lane:${g.id}`,
+          type: "lane",
+          position: { x: laneX, y: laneY },
+          data: { label: g.label, count: g.nodes.length },
+          width: LANE_W,
+          height: laneH(g),
+          selectable: false,
+          draggable: false,
+          zIndex: -1,
+        });
+        g.nodes.forEach((node, ri) => {
+          place.set(node.id, { gi, ri, row, col });
+          nodes.push({
+            id: node.id,
+            type: "arch",
+            position: { x: laneX + LANE_PAD_X, y: laneY + LANE_PAD_TOP + ri * (NODE_H + VGAP) },
+            data: { ...node },
+            width: NODE_W,
+            height: NODE_H,
+          });
+        });
+      });
+
+      // Edges — single converging entry/exit point per side.
+      const edges = [];
+      const allNodes = groups.flatMap((g) => g.nodes);
+      for (const node of allNodes) {
+        const src = place.get(node.id);
+        for (const t of node.targets ?? []) {
+          const target = typeof t === "string" ? { id: t } : t;
+          const dst = place.get(target.id);
+          if (!dst) continue;
+          let sourceHandle, targetHandle, back = false;
+          if (dst.row > src.row) { sourceHandle = "sb"; targetHandle = "tt"; }
+          else if (dst.row < src.row) { sourceHandle = "st"; targetHandle = "tb"; back = true; }
+          else if (dst.col > src.col) { sourceHandle = "sr"; targetHandle = "tl"; }
+          else if (dst.col < src.col) { sourceHandle = "sl"; targetHandle = "tr"; back = true; }
+          else { sourceHandle = "sb"; targetHandle = "tt"; }
+          edges.push({
+            id: `${node.id}->${target.id}`,
+            source: node.id,
+            target: target.id,
+            sourceHandle,
+            targetHandle,
+            type: "smoothstep",
+            pathOptions: { borderRadius: 12 },
+            label: target.label,
+            // Feedback / return edges render dashed so they never read as
+            // part of the forward flow.
+            style: { stroke: "var(--edge)", ...(back ? { strokeDasharray: "5 4" } : {}) },
+            markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "var(--edge)" },
+          });
+        }
+      }
+      return { nodes, edges };
+    }
+
+    function Detail({ node, onClose }) {
+      if (!node) return null;
+      const d = node.data;
+      return h`
+        <div class="detail">
+          <button class="close" onClick=${onClose} aria-label="Close">✕</button>
+          <span class="kind"><i style=${{ background: `var(--k-${d.kind})` }}></i>${d.kind}</span>
+          <h3>${d.label}</h3>
+          ${d.sub ? h`<p>${d.sub}</p>` : null}
+          ${d.refs?.length ? h`<ul class="refs">${d.refs.map((r) => h`<li key=${r}>${r}</li>`)}</ul>` : null}
+        </div>`;
+    }
+
+    function App() {
+      const initial = Math.max(0, ARCHITECTURES.findIndex(
+        (a) => "#" + encodeURIComponent(a.name) === location.hash
+      ));
+      const [active, setActive] = useState(initial);
+      const [selected, setSelected] = useState(null);
+      const [dirty, setDirty] = useState(false);
+      const [nonce, setNonce] = useState(0);
+      const buildout = ARCHITECTURES[active];
+      const { nodes, edges } = useMemo(() => toFlow(buildout), [buildout]);
+
+      const usedKinds = useMemo(() => {
+        const s = new Set(buildout.groups.flatMap((g) => g.nodes.map((n) => n.kind)));
+        return KINDS.filter((k) => s.has(k));
+      }, [buildout]);
+
+      const pick = useCallback((i) => {
+        setActive(i);
+        setSelected(null);
+        setDirty(false);
+        history.replaceState(null, "", "#" + encodeURIComponent(ARCHITECTURES[i].name));
+      }, []);
+
+      return h`
+        <div class="arch-bar" role="tablist">
+          ${ARCHITECTURES.map((a, i) => h`
+            <button key=${a.name} role="tab" aria-selected=${i === active}
+              class="arch-tab ${i === active ? "active" : ""}"
+              onClick=${() => pick(i)}>${a.name}</button>`)}
+        </div>
+        <div class="arch-meta">
+          <span class="arch-desc">${buildout.description}</span>
+          <span class="legend">
+            ${usedKinds.map((k) => h`<span key=${k}><i style=${{ background: `var(--k-${k})` }}></i>${k}</span>`)}
+          </span>
+        </div>
+        <div class="canvas-wrap">
+          <${ReactFlowProvider}>
+            <${ReactFlow}
+              key=${`${buildout.name}:${nonce}`}
+              defaultNodes=${nodes}
+              defaultEdges=${edges}
+              nodeTypes=${nodeTypes}
+              fitView
+              fitViewOptions=${{ padding: 0.08, maxZoom: 1.1 }}
+              minZoom=${0.25}
+              maxZoom=${2.5}
+              nodesConnectable=${false}
+              deleteKeyCode=${null}
+              proOptions=${{ hideAttribution: true }}
+              onNodeClick=${(_, node) => node.type === "arch" && setSelected(node)}
+              onPaneClick=${() => setSelected(null)}
+              onNodeDragStop=${() => setDirty(true)}
+            >
+              <${Background} gap=${28} size=${1} color="var(--dots)" />
+              <${Controls} showInteractive=${false} position="bottom-left" />
+            <//>
+          <//>
+          <${Detail} node=${selected} onClose=${() => setSelected(null)} />
+          ${dirty ? h`
+            <button class="reset-btn" onClick=${() => { setNonce((x) => x + 1); setDirty(false); }}>
+              Reset layout
+            </button>` : null}
+          <div class="hint">drag to pan · pinch or ⌘-scroll to zoom · click a node</div>
+        </div>`;
+    }
+
+    createRoot(document.getElementById("root")).render(h`<${App} />`);
+  </script>
+</body>
+</html>

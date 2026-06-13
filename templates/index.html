@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__PROJECT__ · Progress</title>
+<!--
+  ========================================================================
+  PERSISTENT PROGRESS LOG  -  read progress/README.md before editing.
+  One entry per TASK, not per commit. New task -> prepend ONE
+  <article class="entry"> right after the ENTRIES:START marker (newest on
+  top), copied from the entry-skeleton template near the end of <body>.
+  SAME task continuing -> EDIT your existing entry in place (don't append a
+  near-duplicate); add <span class="edited" data-time="ISO"> so it shows
+  "updated …", and keep the original <time>. Bullets reflect the CURRENT
+  state, not a diary. Only edit your own (same-branch) active entries;
+  other agents' and older settled entries are append-only.
+
+  STATUS (data-status on .status): wip -> amber, new -> blue, done -> green,
+  failed -> red. Open wip; when it lands set "new" (= done + worth a timely
+  look) or "done". "new" auto-ages back to "done" after ~2h untouched, and
+  you should demote stale "new"s yourself when you start / move on — keep it
+  to ~one at a time; not everything needs it.
+  MEDIA: one image per task — overwrite the SAME file as you iterate this
+  session; keep only the most recent. Don't pile up near-duplicate variants.
+  STYLE: header <=5 words. Bullets only, each <=12 words. No prose.
+  ========================================================================
+-->
+<style>
+  :root {
+    /* Surfaces: light-grey page, white primary cards, grey secondary. No borders. */
+    --bg: #f7f7f9;
+    --primary: #ffffff;
+    --fg: #1d1d1f;
+    --fg-2: #6e6e73;
+    --fg-3: #a1a1a6;
+    /* One accent (green) + semantic status colors. */
+    --accent: #28a745;
+    --green: #1f9d44;
+    --amber: #b06a00;
+    --red: #d70015;
+    --blue: #007aff;   /* "new" tag — newest post */
+    /* Type scale — three sizes only. */
+    --t-meta: 12px;
+    --t-body: 14px;
+    --t-title: 15px;
+    --r-card: 12px;
+    --r-img: 8px;
+    --r-code: 5px;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --primary: #2c2c2e;
+      --fg: #f5f5f7;
+      --fg-2: #98989d;
+      --fg-3: #636366;
+      --accent: #30d158;
+      --green: #30d158;
+      --amber: #ffd60a;
+      --red: #ff453a;
+      --blue: #0a84ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: var(--t-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 24px 20px 96px; }
+
+  /* ── Masthead — title + sort on row 1, tabs on row 2. Not sticky. ── */
+  .masthead-inner {
+    max-width: 680px; margin: 0 auto; padding: 24px 20px 4px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 12px;
+  }
+  .masthead h1 { font-size: var(--t-title); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+
+  /* Sort toggle — plain text, no background; arrow matches the text colour. */
+  .sort {
+    margin-left: auto; font-family: var(--sans); font-size: var(--t-meta);
+    color: var(--fg-2); background: none; border: 0; padding: 2px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    transition: color .15s ease;
+  }
+  .sort:hover { color: var(--fg); }
+  .sort .arrow { color: inherit; font-weight: 600; }
+
+  /* Tabs — own row beneath the title (Log · Map · Architecture). */
+  .tabs { display: flex; gap: 3px; flex-basis: 100%; margin-left: 0; }
+  .tabs a { font-size: var(--t-meta); color: var(--fg-2); text-decoration: none; padding: 5px 12px; border-radius: 100px; }
+  .tabs a:hover { color: var(--fg); }
+  .tabs a.active { background: var(--primary); color: var(--fg); font-weight: 600; }
+
+  /* ── Entry (primary, white, no border) ────────────────── */
+  .entries { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; position: relative; }
+  .entries.reverse { flex-direction: column-reverse; }
+  /* Reading order inside a post: head → title → image → bullets. */
+  .entry {
+    background: var(--primary);
+    border-radius: var(--r-card);
+    padding: 16px 18px;
+    transition: margin .2s ease;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .entry-head { order: 0; }
+  .entry h2 { order: 1; }
+  .entry .media { order: 2; }
+  .entry-body { order: 3; }
+  /* When the Condense button shows, neighbours part to make room. */
+  .entry.push-up   { margin-bottom: 18px; }
+  .entry.push-down { margin-top: 18px; }
+
+  /* Meta row — relative time + small badges, all one (small) size. */
+  .entry-head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 11px; color: var(--fg-2);
+    font-variant-numeric: tabular-nums; margin-bottom: 9px;
+  }
+  /* Branch + status — small badges, a notch smaller than the meta line. */
+  .branch, .status { font-size: 11px; line-height: 1.5; border-radius: var(--r-code); padding: 2px 7px; white-space: nowrap; }
+  /* Branch — dim grey badge, links to GitHub. */
+  .branch {
+    font-family: var(--mono); color: var(--fg-2); background: var(--bg);
+    text-decoration: none;
+  }
+  a.branch:hover { color: var(--fg); }
+  /* "updated" marker — shows when an entry was edited after it was created. */
+  .entry-head .edited { color: var(--fg-3); }
+  .entry-head .edited:empty { display: none; }
+  .entry-head .edited::before { content: "·"; margin-right: 6px; color: var(--fg-3); }
+  /* Status — colored pill: full-color text on a 10%-opacity bg of that color.
+     "new" is "done + worth a timely look"; JS ages it back to "done". */
+  .status { font-weight: 600; margin-left: auto; }
+  .status[data-status="new"]    { color: var(--blue);  background: color-mix(in srgb, var(--blue) 12%, transparent); }
+  .status[data-status="done"]   { color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
+  .status[data-status="wip"]    { color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, transparent); }
+  .status[data-status="failed"] { color: var(--red);   background: color-mix(in srgb, var(--red) 10%, transparent); }
+
+  .entry h2 { font-size: var(--t-title); font-weight: 600; letter-spacing: -0.01em; margin: 0 0 7px; }
+  .entry-body { font-size: var(--t-body); color: var(--fg); overflow-wrap: break-word; }
+  .entry-body ul { margin: 0; padding-left: 18px; }
+  .entry-body li { margin: 3px 0; color: var(--fg-2); }
+  .entry-body li::marker { color: var(--fg-3); }
+  /* Inline code — secondary grey surface, no border. */
+  .entry-body code {
+    font-family: var(--mono); font-size: 0.86em; color: var(--fg);
+    background: var(--bg); border-radius: var(--r-code); padding: 1px 5px;
+  }
+  .entry-body a { color: var(--accent); text-decoration: none; }
+  .entry-body a:hover { text-decoration: underline; }
+
+  /* ── Media — sits between the title and the bullets ── */
+  .media { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 0 0 12px; }
+  .media:empty { display: none; }
+  .media figure { margin: 0; background: var(--bg); border-radius: var(--r-img); padding: 6px; }
+  .media img, .media video {
+    width: 100%; height: auto; display: block; border-radius: calc(var(--r-img) - 3px);
+  }
+  .media figcaption { font-size: var(--t-meta); color: var(--fg-3); margin: 6px 2px 1px; line-height: 1.4; }
+
+  /* ── Per-post delete — pops out to the RIGHT on 500ms hover, aligned to
+        the status badge. Desktop only (needs room beside the card). ── */
+  .post-del {
+    position: absolute; left: 100%; margin-left: 10px; top: 0;
+    transform: translateY(-50%);
+    width: 30px; height: 30px; padding: 6px; z-index: 6;
+    display: none; align-items: center; justify-content: center;
+    color: var(--fg-2); background: color-mix(in srgb, var(--fg) 8%, transparent);
+    border: 0; border-radius: var(--r-code); cursor: pointer;
+  }
+  /* Transparent bridge across the gap so moving card → button keeps hover. */
+  .post-del::before { content: ""; position: absolute; right: 100%; top: 0; width: 14px; height: 100%; }
+  .entry.show-del .post-del { display: inline-flex; animation: post-del-in .14s ease; }
+  .post-del:hover { color: var(--red); background: color-mix(in srgb, var(--red) 10%, transparent); }
+  @keyframes post-del-in {
+    from { opacity: 0; transform: translateY(-50%) translateX(-6px); }
+    to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  /* No room beside the card on narrow screens — never show it there. */
+  @media (max-width: 768px) { .entry.show-del .post-del { display: none; } }
+
+  /* ── Condense — full-width GHOST button (no border) on gap hover ── */
+  .condense-aff {
+    position: absolute; left: 0; right: 0; height: 26px;
+    transform: translateY(-50%); display: flex; align-items: center;
+    opacity: 0; pointer-events: none; transition: opacity .14s ease; z-index: 5;
+  }
+  .condense-aff.show { opacity: 1; pointer-events: auto; }
+  .condense-aff button {
+    width: 100%; height: 100%; font-family: var(--sans); font-size: var(--t-meta);
+    font-weight: 600; letter-spacing: .02em; color: var(--fg-3);
+    background: transparent; border: 0; border-radius: var(--r-code);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: color .14s ease, background .14s ease;
+  }
+  .condense-aff button:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 6%, transparent); }
+
+  /* ── Condensed separator — no container, just a quiet inline control ── */
+  .tray { width: 100%; }
+  .tray-head {
+    width: 100%; font-family: var(--sans); font-size: var(--t-meta); color: var(--fg-2);
+    background: transparent; border: 0; padding: 7px 6px; cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tray-head:hover { color: var(--fg); }
+  .tray-head b { color: var(--fg); font-weight: 600; }
+  .tray-chevron { width: 15px; height: 15px; flex: none; color: var(--fg-3); display: inline-flex; transition: transform .2s ease; }
+  .tray:not(.collapsed) .tray-chevron { transform: rotate(180deg); }
+  .tray-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+  .tray-act {
+    width: 28px; height: 28px; flex: none; padding: 5px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-3); background: transparent; border: 0; border-radius: var(--r-code);
+    cursor: pointer; opacity: 0; pointer-events: none;
+    transition: opacity .15s ease, color .15s ease, background .15s ease;
+  }
+  .tray-head.show-actions .tray-act { opacity: 1; pointer-events: auto; }
+  .tray-expand:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 8%, transparent); }
+  .tray-trash:hover { color: var(--red); background: color-mix(in srgb, var(--red) 10%, transparent); }
+  .tray-body { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .tray.collapsed .tray-body { display: none; }
+
+  /* ── Mobile — narrow phones: tighten spacing, edge-safe ── */
+  @media (max-width: 560px) {
+    .wrap { padding: 8px 14px 80px; }
+    .masthead-inner { padding: 18px 14px 2px; }
+    .entries { margin-top: 14px; }
+    .entry { padding: 14px 15px; }
+    .entry-head .status { margin-left: 0; } /* flow left-to-right, wrap naturally */
+  }
+
+  /* ── Footer — live-preview toggle (iOS switch) + Readme link ── */
+  .foot { display: flex; align-items: center; gap: 14px; margin-top: 22px; padding: 0 2px; font-size: var(--t-meta); }
+  .foot-toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; color: var(--fg-2); }
+  .foot-toggle.disabled { opacity: .5; cursor: default; }
+  .switch {
+    appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+    position: relative; width: 34px; height: 20px; border-radius: 100px;
+    background: var(--fg-3); cursor: pointer; transition: background .18s ease;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+    transition: transform .18s ease;
+  }
+  .switch:checked { background: var(--green); }
+  .switch:checked::after { transform: translateX(14px); }
+  .switch:disabled { cursor: default; }
+  .foot-link { margin-left: auto; color: var(--fg-2); text-decoration: none; }
+  .foot-link:hover { color: var(--fg); }
+
+  template { display: none; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <div class="masthead-inner">
+      <h1>Progress</h1>
+      <button id="sort-toggle" class="sort" type="button" aria-pressed="true">
+        Newest first <span class="arrow">↑</span>
+      </button>
+      <nav class="tabs"><a href="index.html" class="active" aria-current="page">Log</a><a href="architecture.html">Architecture</a></nav>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="entries">
+            <!-- ENTRIES:START -->
+      <!-- ↑↑↑ NEW ENTRIES GO IMMEDIATELY BELOW THIS MARKER (newest first) ↑↑↑ -->
+
+      <article class="entry">
+        <div class="entry-head">
+          <time datetime="__SEED_ISO__">__SEED_LABEL__</time>
+          <a class="branch">__BRANCH__</a>
+          <span class="status" data-status="new">new</span>
+        </div>
+        <h2>Progress log started</h2>
+        <div class="entry-body">
+          <ul>
+            <li>Tracks every feature + build-out here, newest first.</li>
+            <li>Hover a gap to condense; hover a post to delete it.</li>
+            <li>Replace this seed with your first real entry.</li>
+          </ul>
+        </div>
+        <div class="media"></div>
+      </article>
+
+      <!-- ENTRIES:END -->
+    </div>
+
+    <div class="foot">
+      <label class="foot-toggle" id="preview-toggle-wrap" title="When on, an agent hosts this page over a Cloudflare tunnel and posts a tappable link.">
+        <span>Live preview link</span>
+        <input type="checkbox" id="preview-toggle" class="switch" role="switch">
+      </label>
+      <a class="foot-link" href="about.html">Readme →</a>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ENTRY SKELETON — one entry per TASK, not per commit. Full rules:
+       progress/README.md. The short version:
+         • An entry = a unit of work. While the SAME work continues, EDIT
+           your entry in place (don't append a near-duplicate).
+         • status: wip (amber) → new (blue) | done (green) | failed (red).
+           "new" = done + worth a timely look; it auto-ages to "done" (~2h),
+           and demote stale "new"s yourself. ~one "new" at a time.
+         • Editing an entry after creation? Set <span class="edited"
+           data-time="ISO"> — it renders "updated …". Keep the original
+           <time>; that's when the work started.
+         • Bullets describe the CURRENT state (prune superseded steps),
+           not a diary. header ≤5 words; bullets ≤12 words.
+         • Only edit YOUR OWN (same-branch) active entries.
+       ════════════════════════════════════════════════════════════════ -->
+  <template id="entry-skeleton">
+      <article class="entry">
+        <div class="entry-head">
+          <time datetime="YYYY-MM-DDTHH:MM:SSZ">YYYY-MM-DD · HH:MM UTC</time>
+          <!-- add when you edit later: <span class="edited" data-time="YYYY-MM-DDTHH:MM:SSZ"></span> -->
+          <a class="branch">BRANCH-NAME</a>
+          <span class="status" data-status="wip">wip</span>
+        </div>
+        <h2>HEADER ≤5 WORDS</h2>
+        <!-- reading order is title → image → bullets; keep media before the body. -->
+        <div class="media">
+          <figure><img src="media/FILENAME.png" alt="DESCRIPTION"><figcaption>Caption ≤12 words.</figcaption></figure>
+        </div>
+        <div class="entry-body">
+          <ul>
+            <li>Key point — ≤12 words.</li>
+            <li>Key point — ≤12 words.</li>
+          </ul>
+        </div>
+      </article>
+  </template>
+
+  <script>
+    var REPO = "__REPO_URL__";
+    var NEW_TTL = 2 * 60 * 60 * 1000; // a "new" untouched this long auto-reverts to "done"
+
+    // Auto-age "new" → "done": once an entry hasn't been touched for a while
+    // (edited-time if present, else created-time), it's no longer "timely".
+    function ageStatuses() {
+      Array.prototype.forEach.call(document.querySelectorAll('.status[data-status="new"]'), function (s) {
+        var entry = s.closest(".entry"); if (!entry) return;
+        var ed = entry.querySelector(".edited[data-time]");
+        var iso = ed && ed.getAttribute("data-time");
+        if (!iso) { var t = entry.querySelector("time[datetime]"); iso = t && t.getAttribute("datetime"); }
+        var dt = new Date(iso);
+        if (isNaN(dt)) return;
+        if (Date.now() - dt.getTime() > NEW_TTL) { s.setAttribute("data-status", "done"); s.textContent = "done"; }
+      });
+    }
+
+    // Branch badges → GitHub links (name in textContent, no href needed).
+    Array.prototype.forEach.call(document.querySelectorAll("a.branch"), function (a) {
+      var name = a.textContent.trim();
+      if (name && name !== "BRANCH-NAME") a.href = REPO + "/tree/" + name;
+    });
+
+    // Render <time> as a relative label; keep the absolute UTC in the tooltip.
+    function relativeTime(date) {
+      var s = Math.round((Date.now() - date.getTime()) / 1000);
+      if (s < 0) s = 0;
+      var m = Math.round(s / 60), h = Math.round(m / 60), d = Math.round(h / 24);
+      if (s < 45) return "just now";
+      if (m < 2)  return "a minute ago";
+      if (m < 45) return m + " minutes ago";
+      if (h < 2)  return "an hour ago";
+      if (h < 22) return h + " hours ago";
+      if (d < 2)  return "yesterday";
+      if (d < 7)  return d + " days ago";
+      if (d < 11) return "a week ago";
+      if (d < 28) return Math.round(d / 7) + " weeks ago";
+      var mo = Math.round(d / 30);
+      if (mo < 2)  return "a month ago";
+      if (mo < 12) return mo + " months ago";
+      var y = Math.round(d / 365);
+      return y < 2 ? "a year ago" : y + " years ago";
+    }
+    function paintTimes() {
+      Array.prototype.forEach.call(document.querySelectorAll("time[datetime]"), function (t) {
+        var dt = new Date(t.getAttribute("datetime"));
+        if (isNaN(dt)) return;
+        if (!t.dataset.abs) t.dataset.abs = t.textContent.trim();
+        t.title = t.dataset.abs;
+        t.textContent = relativeTime(dt);
+      });
+      // "updated …" marker for entries edited after creation (data-time on .edited).
+      Array.prototype.forEach.call(document.querySelectorAll(".edited[data-time]"), function (el) {
+        var dt = new Date(el.getAttribute("data-time"));
+        if (isNaN(dt)) return;
+        el.title = "updated " + el.getAttribute("data-time");
+        el.textContent = "updated " + relativeTime(dt);
+      });
+      ageStatuses();
+    }
+    paintTimes();
+    setInterval(paintTimes, 60000);
+
+    // Newest-first toggle — flips render order via flexbox only.
+    // Source order stays newest-first so agents always prepend at top.
+    (function () {
+      var btn = document.getElementById("sort-toggle");
+      var list = document.querySelector(".entries");
+      var arrow = btn.querySelector(".arrow");
+      btn.addEventListener("click", function () {
+        var oldestFirst = list.classList.toggle("reverse");
+        btn.firstChild.textContent = oldestFirst ? "Oldest first " : "Newest first ";
+        arrow.textContent = oldestFirst ? "↓" : "↑";
+        btn.setAttribute("aria-pressed", String(!oldestFirst));
+      });
+    })();
+
+    // Condense — dwell 500ms in the gap between two entries to reveal a
+    // borderless ghost button; the neighbours part to make room. Click tucks
+    // everything below into a collapsible separator (chevron + count). Hover
+    // the separator 500ms for a trashcan that deletes the group. The condense
+    // position (collapsed / deleted) is remembered in localStorage.
+    (function () {
+      var list = document.querySelector(".entries");
+      if (!list) return;
+
+      var CHEVRON = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var TRASH = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 3H15M3 6H21M19 6L18.2987 16.5193C18.1935 18.0975 18.1409 18.8867 17.8 19.485C17.4999 20.0118 17.0472 20.4353 16.5017 20.6997C15.882 21 15.0911 21 13.5093 21H10.4907C8.90891 21 8.11803 21 7.49834 20.6997C6.95276 20.4353 6.50009 20.0118 6.19998 19.485C5.85911 18.8867 5.8065 18.0975 5.70129 16.5193L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var EXPAND = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 14V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H14M10 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V10M15 9L21 3M21 3H15M21 3V9M9 15L3 21M3 21H9M3 21L3 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var KEY = "progress-condense-v1", PUSH = 18;
+
+      function rawEntries() { return Array.prototype.slice.call(list.querySelectorAll(":scope > .entry")); }
+      function visEntries() { return rawEntries().filter(function (e) { return e.style.display !== "none"; }); }
+      function timeKey(e) { var t = e.querySelector("time[datetime]"); return t ? t.getAttribute("datetime") : null; }
+      function indexByKey(k) { var it = visEntries(); for (var i = 0; i < it.length; i++) if (timeKey(it[i]) === k) return i; return -1; }
+      function plural(n) { return n === 1 ? "entry" : "entries"; }
+      function saveState(s) { try { s ? localStorage.setItem(KEY, JSON.stringify(s)) : localStorage.removeItem(KEY); } catch (e) {} }
+      function loadState() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
+
+      // ── floating ghost button ──
+      var aff = document.createElement("div");
+      aff.className = "condense-aff";
+      var affBtn = document.createElement("button");
+      affBtn.type = "button";
+      affBtn.textContent = "Condense";
+      aff.appendChild(affBtn);
+      list.appendChild(aff);
+
+      var timer = null, armed = null, pushPair = null;
+      function clearPush() { if (pushPair) { pushPair[0].classList.remove("push-up"); pushPair[1].classList.remove("push-down"); pushPair = null; } }
+      function hideAff() { aff.classList.remove("show"); clearPush(); armed = null; if (timer) { clearTimeout(timer); timer = null; } }
+
+      list.addEventListener("mousemove", function (e) {
+        if (aff.contains(e.target)) return;                // keep shown while on the button
+        if (list.classList.contains("reverse")) { hideAff(); return; }  // newest-first only
+        var items = visEntries(), y = e.clientY, found = -1;
+        for (var i = 0; i < items.length - 1; i++) {
+          var b = items[i].getBoundingClientRect().bottom;
+          var t = items[i + 1].getBoundingClientRect().top;
+          if (y >= b - 8 && y <= t + 8) { found = i; break; }
+        }
+        if (found < 0) { hideAff(); return; }
+        var upper = items[found];
+        if (armed === upper) return;                       // same gap — keep waiting/shown
+        hideAff();
+        armed = upper;
+        var lower = items[found + 1];
+        timer = setTimeout(function () {
+          var base = upper.offsetTop + upper.offsetHeight; // upper's bottom (its own margin doesn't move it)
+          upper.classList.add("push-up"); lower.classList.add("push-down");
+          pushPair = [upper, lower];
+          aff.style.top = (base + (12 + PUSH * 2) / 2) + "px";  // centre of the opened gap
+          aff.dataset.after = timeKey(upper);
+          aff.classList.add("show");
+        }, 500);
+      });
+      list.addEventListener("mouseleave", hideAff);
+
+      function flatten() {
+        var tray = list.querySelector(":scope > .tray");
+        if (!tray) return;
+        var body = tray.querySelector(".tray-body");
+        while (body.firstChild) list.insertBefore(body.firstChild, tray);
+        list.removeChild(tray);
+      }
+
+      function condenseAfter(idx, opts) {
+        opts = opts || {};
+        flatten();                                         // one separator at a time
+        var items = visEntries(), upper = items[idx], below = items.slice(idx + 1);
+        if (!upper || !below.length) return;
+        var key = timeKey(upper);
+
+        var tray = document.createElement("div");
+        tray.className = "tray" + (opts.collapsed === false ? "" : " collapsed");
+        tray.dataset.after = key;
+
+        var head = document.createElement("div");
+        head.className = "tray-head"; head.setAttribute("role", "button"); head.tabIndex = 0;
+        var chev = document.createElement("span"); chev.className = "tray-chevron"; chev.innerHTML = CHEVRON;
+        var label = document.createElement("span"); label.className = "tray-label";
+        var actions = document.createElement("div"); actions.className = "tray-actions";
+        var expand = document.createElement("button"); expand.type = "button"; expand.className = "tray-act tray-expand";
+        expand.setAttribute("aria-label", "Remove this condense break"); expand.innerHTML = EXPAND;
+        var trash = document.createElement("button"); trash.type = "button"; trash.className = "tray-act tray-trash";
+        trash.setAttribute("aria-label", "Delete these condensed entries"); trash.innerHTML = TRASH;
+        actions.appendChild(expand); actions.appendChild(trash);
+        head.appendChild(chev); head.appendChild(label); head.appendChild(actions);
+
+        var body = document.createElement("div"); body.className = "tray-body";
+        below.forEach(function (el) { body.appendChild(el); });
+        tray.appendChild(head); tray.appendChild(body);
+        upper.parentNode.insertBefore(tray, upper.nextSibling);
+
+        function render() {
+          label.innerHTML = (tray.classList.contains("collapsed") ? "Show <b>" : "Hide <b>")
+            + below.length + "</b> earlier " + plural(below.length);
+        }
+        function persist() { saveState({ after: key, collapsed: tray.classList.contains("collapsed"), deleted: false }); }
+        function toggle() { tray.classList.toggle("collapsed"); render(); persist(); }
+        render();
+        head.addEventListener("click", toggle);
+        head.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } });
+
+        // Expand + trash appear after a 500ms dwell on the separator.
+        var th = null;
+        head.addEventListener("mouseenter", function () { th = setTimeout(function () { head.classList.add("show-actions"); }, 500); });
+        head.addEventListener("mouseleave", function () { if (th) { clearTimeout(th); th = null; } head.classList.remove("show-actions"); });
+        // Expand — remove the condense break; the older posts return to normal flow.
+        expand.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          flatten();
+          saveState(null);                                 // forget the condense
+        });
+        trash.addEventListener("click", function (ev) {
+          ev.stopPropagation();                            // don't toggle
+          below.forEach(function (el) { el.style.display = "none"; list.appendChild(el); });
+          tray.remove();
+          saveState({ after: key, deleted: true });        // remembered: stays gone on reload
+        });
+
+        if (opts.persist !== false) persist();
+      }
+
+      affBtn.addEventListener("click", function () {
+        var key = aff.dataset.after;
+        hideAff();
+        var idx = indexByKey(key);
+        if (idx >= 0) condenseAfter(idx);
+      });
+
+      // Restore the remembered condense position (deep link #condense=N wins).
+      (function restore() {
+        var m = /(?:^|#|&)condense=(\d+)/.exec(location.hash);
+        if (m) { condenseAfter(parseInt(m[1], 10)); return; }
+        var s = loadState();
+        if (!s) return;
+        var idx = indexByKey(s.after);
+        if (idx < 0) return;                               // stale — that entry is gone
+        if (s.deleted) {
+          visEntries().slice(idx + 1).forEach(function (el) { el.style.display = "none"; list.appendChild(el); });
+        } else {
+          condenseAfter(idx, { collapsed: s.collapsed !== false, persist: false });
+        }
+      })();
+    })();
+
+    // Live-preview checkbox — reflects + writes progress/preview.json via the
+    // progress-server (only when it's serving the page). The agent reads
+    // preview.json next session and brings the tunnel + link up/down to match.
+    (function () {
+      var box = document.getElementById("preview-toggle");
+      var wrap = document.getElementById("preview-toggle-wrap");
+      if (!box) return;
+      function disable(msg) { wrap.classList.add("disabled"); box.disabled = true; if (msg) wrap.title = msg; }
+      if (!/^https?:$/.test(location.protocol)) { disable("Open the hosted page to toggle this."); return; }
+      fetch("api/preview", { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (d) { box.checked = !!d.tunnel; })
+        .catch(function () { disable("Live toggle works on the hosted (tunnel) page."); });
+      box.addEventListener("change", function () {
+        fetch("api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tunnel: box.checked }) }).catch(function () {});
+      });
+    })();
+
+    // Per-post delete — hover a post for 500ms to reveal a trash button that
+    // pops out to its right (aligned to the status badge); click removes that
+    // post. The deletion is remembered (localStorage), per-browser only.
+    (function () {
+      var list = document.querySelector(".entries");
+      if (!list) return;
+      var DEL_KEY = "progress-deleted-v1";
+      var TRASH = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 3H15M3 6H21M19 6L18.2987 16.5193C18.1935 18.0975 18.1409 18.8867 17.8 19.485C17.4999 20.0118 17.0472 20.4353 16.5017 20.6997C15.882 21 15.0911 21 13.5093 21H10.4907C8.90891 21 8.11803 21 7.49834 20.6997C6.95276 20.4353 6.50009 20.0118 6.19998 19.485C5.85911 18.8867 5.8065 18.0975 5.70129 16.5193L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      function load() { try { return new Set(JSON.parse(localStorage.getItem(DEL_KEY) || "[]")); } catch (e) { return new Set(); } }
+      var deleted = load();
+      function save() { try { localStorage.setItem(DEL_KEY, JSON.stringify(Array.from(deleted))); } catch (e) {} }
+      function keyOf(entry) { var t = entry.querySelector("time[datetime]"); return t && t.getAttribute("datetime"); }
+
+      Array.prototype.forEach.call(list.querySelectorAll(":scope > .entry"), function (entry) {
+        if (deleted.has(keyOf(entry))) { entry.remove(); return; }
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "post-del";
+        btn.setAttribute("aria-label", "Delete this post"); btn.innerHTML = TRASH;
+        entry.appendChild(btn);
+        var showT = null, hideT = null;
+        function cancelShow() { if (showT) { clearTimeout(showT); showT = null; } }
+        function cancelHide() { if (hideT) { clearTimeout(hideT); hideT = null; } }
+        function reveal() {
+          var st = entry.querySelector(".status");
+          if (st) btn.style.top = (st.offsetTop + st.offsetHeight / 2) + "px";
+          entry.classList.add("show-del");
+        }
+        function scheduleHide() { cancelHide(); hideT = setTimeout(function () { entry.classList.remove("show-del"); hideT = null; }, 220); }
+        // Reveal after a 500ms dwell on the post; keep it up while on the post
+        // OR the button (the gap between is bridged + a hide delay covers it).
+        entry.addEventListener("mouseenter", function () { cancelHide(); showT = setTimeout(reveal, 500); });
+        entry.addEventListener("mouseleave", function () { cancelShow(); scheduleHide(); });
+        btn.addEventListener("mouseenter", function () { cancelShow(); cancelHide(); });
+        btn.addEventListener("mouseleave", scheduleHide);
+        btn.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          var k = keyOf(entry);
+          if (k) { deleted.add(k); save(); }
+          entry.remove();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

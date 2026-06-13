@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Readme · Progress</title>
+<style>
+  :root {
+    --bg: #f7f7f9; --primary: #ffffff; --fg: #1d1d1f; --fg-2: #6e6e73; --fg-3: #a1a1a6;
+    --green: #1f9d44; --blue: #007aff; --r-card: 12px; --r-code: 6px; --line: #ececef;
+    --code-bg: #f5f5f7; --code-fg: #2b2b30;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1c1c1e; --primary:#2c2c2e; --fg:#f5f5f7; --fg-2:#98989d; --fg-3:#636366;
+      --green:#30d158; --blue:#0a84ff; --line:#3a3a3e; --code-bg:#1f1f21; --code-fg:#e3e3e6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 660px; margin: 0 auto; padding: 24px 16px 96px; }
+  .masthead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .masthead h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .back { margin-left: auto; font-size: 12px; color: var(--fg-2); text-decoration: none; }
+  .back:hover { color: var(--fg); }
+  .lede { font-size: 14px; color: var(--fg-2); margin: 0 0 18px; }
+
+  /* ── Expandable cards (the SpaceFollowKit-style sectioned doc) ── */
+  details.card {
+    background: var(--primary); border: 1px solid var(--line); border-radius: var(--r-card);
+    margin-bottom: 10px; overflow: hidden;
+  }
+  summary {
+    display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none;
+    padding: 14px 16px; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary .chev { width: 15px; height: 15px; flex: none; color: var(--fg-3); transition: transform .2s ease; }
+  details[open] summary .chev { transform: rotate(180deg); }
+  summary .tag { margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--fg-3); }
+  .body { padding: 0 16px 16px; }
+  .body > :first-child { margin-top: 0; }
+  .body > :last-child { margin-bottom: 0; }
+  p { margin: 0 0 10px; }
+  ul { margin: 0 0 10px; padding-left: 18px; }
+  li { margin: 4px 0; color: var(--fg-2); }
+  li b, p b { color: var(--fg); font-weight: 600; }
+  p, .body { color: var(--fg-2); }
+  code { font-family: var(--mono); font-size: 0.85em; color: var(--fg); background: var(--code-bg); border-radius: var(--r-code); padding: 1px 6px; }
+
+  /* ── Code blocks (faux terminal bar + body) ── */
+  .code { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; margin: 0 0 12px; background: var(--code-bg); }
+  .code-bar { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-bottom: 1px solid var(--line); }
+  .code-bar .d { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3); opacity: .5; }
+  .code-bar .lang { margin-left: 6px; font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; color: var(--code-fg); }
+  pre .c { color: var(--fg-3); }       /* comment */
+  pre .k { color: var(--blue); }       /* keyword / command */
+  pre .s { color: var(--green); }      /* string / arg */
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .pill { font-size: 11px; font-weight: 600; border-radius: var(--r-code); padding: 1px 7px; white-space: nowrap; }
+  .pill.new { color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, transparent); }
+  .pill.done { color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="masthead">
+      <h1>Progress log — readme</h1>
+      <a class="back" href="index.html">← Log</a>
+    </div>
+    <p class="lede">A self-contained progress log + Architecture map for a repo, powered by a
+      reusable Claude Code skill. Tap a section to expand.</p>
+
+    <details class="card" open>
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Overview</summary>
+      <div class="body">
+        <p>One page, <code>progress/index.html</code>, records every feature and build-out —
+          <b>newest first</b>, each entry a two-second scan. Two tabs:</p>
+        <ul>
+          <li><b>Log</b> — the timeline of entries (status, branch, relative time).</li>
+          <li><b>Architecture</b> — a living diagram of how the app is wired.</li>
+        </ul>
+        <p>Statuses: <span class="pill new">new</span> = "look now" (auto-ages to
+          <span class="pill done">done</span> after ~2h) · <span class="pill done">done</span>
+          = landed. Branch badges link to GitHub.</p>
+      </div>
+    </details>
+
+    <details class="card" open>
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Install into a repo <span class="tag">install.sh</span></summary>
+      <div class="body">
+        <p>One command scaffolds <code>progress/</code> + <code>scripts/</code> and wires the rule:</p>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">bash</span></div><pre><span class="k">bash</span> ~/.claude/skills/progress-log/scripts/install.sh <span class="s">--mode rule</span>
+<span class="c"># --mode hook   → also a Stop hook that blocks finishing if code</span>
+<span class="c">#                 changed but the log didn't (the forcing function)</span>
+<span class="c"># --mode manual → scaffold only; invoke the skill by hand</span></pre></div>
+        <p>Idempotent — never clobbers existing entries; refreshes the engine + scripts.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Use it</summary>
+      <div class="body">
+        <p>Slash commands (or just ask "update the progress log"):</p>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">claude</span></div><pre><span class="k">/progress</span>  <span class="s">added the export dialog</span>
+<span class="k">/changelog</span> <span class="s">fixed the auth redirect</span>   <span class="c"># alias</span></pre></div>
+        <p>The full method agents follow is the scaffolded <code>progress/README.md</code>:
+          one entry per task (edited in place), the status lifecycle, maintain the
+          Architecture tab, one image per task, commit + push.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Live preview <span class="tag">preview.json</span></summary>
+      <div class="body">
+        <p>Default is local-only. Flip the <b>Live preview link</b> toggle at the bottom of the
+          Log (or set <code>progress/preview.json</code>) and the next time an agent works it
+          hosts this page over a Cloudflare tunnel and posts a tappable link.</p>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">progress/preview.json</span></div><pre>{ <span class="s">"tunnel"</span>: <span class="k">true</span> }</pre></div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> What a "skill" is</summary>
+      <div class="body">
+        <p>A <b>skill</b> is a folder of instructions (plus helper files) Claude Code loads.
+          This one lives locally at <code>~/.claude/skills/progress-log/</code> —
+          <code>~</code> is your home folder, and Claude Code auto-discovers skills there.
+          Nothing is hosted on a server; it's just files.</p>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">~/.claude/skills/progress-log/</span></div><pre>SKILL.md            <span class="c"># method Claude loads</span>
+templates/          <span class="c"># index.html, architecture.html, about.html, …</span>
+scripts/            <span class="c"># install.sh, progress-tunnel.sh, progress-server.py</span></pre></div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Publish &amp; share <span class="tag">npx skills</span></summary>
+      <div class="body">
+        <p>The registry for <code>npx skills</code> (<a href="https://skills.sh">skills.sh</a>)
+          is just <b>GitHub</b>: any public repo with a <code>SKILL.md</code> at its root is a
+          valid skill. Push this folder to a repo, then anyone installs it with one line:</p>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">publish (once)</span></div><pre><span class="k">cd</span> ~/.claude/skills/progress-log
+<span class="k">git</span> init &amp;&amp; <span class="k">git</span> add -A &amp;&amp; <span class="k">git</span> commit -m <span class="s">"progress-log skill"</span>
+<span class="k">gh</span> repo create <span class="s">progress-log</span> --public --source=. --push</pre></div>
+        <div class="code"><div class="code-bar"><span class="d"></span><span class="lang">anyone installs</span></div><pre><span class="k">npx</span> skills add <span class="s">&lt;your-username&gt;/progress-log</span></pre></div>
+        <p>Or share the folder directly — <code>zip -r progress-log.zip
+          ~/.claude/skills/progress-log</code> — and they unzip it into their own
+          <code>~/.claude/skills/</code>.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Controls on the Log</summary>
+      <div class="body">
+        <ul>
+          <li><b>Condense</b> — hover the gap between two posts to tuck older ones into a tray.</li>
+          <li><b>Delete</b> — hover a post; a trash button appears on its right (your view only).</li>
+          <li><b>Newest first</b> — flips the sort. <b>Live preview link</b> — the tunnel toggle.</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+</body>
+</html>

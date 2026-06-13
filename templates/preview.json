@@ -1,0 +1,4 @@
+{
+  "_comment": "Live preview switch the agent honors. tunnel:false (default) = just edit the local progress/ files, no Cloudflare tunnel, no link in the reply. tunnel:true = the agent brings scripts/progress-tunnel.sh up and posts an 'Open the progress log' link (handy on your phone / away). Flip it here, or ask the agent to 'turn live preview on/off'.",
+  "tunnel": false
+}
