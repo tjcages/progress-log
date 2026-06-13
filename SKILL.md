@@ -1,14 +1,20 @@
 ---
 name: progress-log
 description: >-
-  Install and maintain a persistent, user-facing PROGRESS LOG for a repo — a
-  self-contained progress/index.html (timestamped entries, status pills,
-  condense + delete, optional live preview via Cloudflare tunnel) plus an
-  Architecture tab that stays current. Use when asked to set up / scaffold a
-  progress log or changelog, when an agent should record a feature/build-out or
-  update the log, when maintaining the architecture map, or to configure how
-  strictly agents must keep it current (rule / hook / manual). Also covers
-  turning live preview on/off and capturing real-viewport screenshots.
+  Install and maintain a self-contained, user-facing PROGRESS LOG for a repo
+  (progress/index.html — timestamped entries, status pills, condense + per-post
+  delete, optional Cloudflare-tunnel live preview) plus a living Architecture
+  tab. Use this skill whenever: setting up / scaffolding a progress log or a
+  project changelog page; the user types /progress or /changelog; you finish or
+  ship a feature, fix, refactor, or notable change in a repo that has (or should
+  have) a progress/ log — record it even if the user didn't explicitly say
+  "progress log"; updating, editing, or condensing existing log entries;
+  maintaining the architecture map/diagram; choosing how strictly agents keep
+  the log current (rule / hook / manual enforcement); or turning the live-preview
+  link on/off. Bias toward using it for any "log/record what changed", "update
+  the changelog", "what have we built", or "set up a changelog" request about a
+  project's own progress. (This is the project's own progress log built by this
+  skill — not for reading a dependency's external CHANGELOG.md file.)
 ---
 
 # Progress log
@@ -61,13 +67,18 @@ Full rules live in the scaffolded **`progress/README.md`** — read it. The esse
 ## Live preview (opt-in)
 
 Default is local-only — just edit the files. Flip `progress/preview.json` `"tunnel": true`
-(or the user asks) and the agent runs `scripts/progress-tunnel.sh`, then posts an **Open the
-progress log** link at the bottom of the reply (URL in `/tmp/progress-tunnel-url.txt`).
+(or tick the page's footer toggle, or the user asks) and the agent runs
+`scripts/progress-tunnel.sh`, then posts the link at the bottom of the reply. The link **must
+be a clickable markdown hyperlink, exactly `[Open the progress log →](URL)`** — never a bare
+URL, no emoji — and `URL` is read **fresh** from `/tmp/progress-tunnel-url.txt` every time (it
+changes when the tunnel restarts).
 
 ## Files this skill carries
 
 - `templates/` — `index.html` (the log engine: relative times, branch→GitHub badges,
-  condense tray, per-post delete, status aging), `architecture.html` (repo-agnostic React-Flow
-  renderer), `architectures.data.js` (seed), `README.md` (full protocol), `preview.json`,
-  `claude-block.md` (the injected rule).
-- `scripts/` — `install.sh`, `progress-tunnel.sh`, `progress-shot.mjs`, `progress-standalone.mjs`.
+  condense tray, per-post delete, status aging, live-preview toggle), `architecture.html`
+  (repo-agnostic React-Flow renderer) + `architectures.data.js` (seed), `about.html` (the
+  in-page readme), `README.md` (full protocol), `preview.json`, `claude-block.md` (the
+  injected rule).
+- `scripts/` — `install.sh`, `progress-server.py` (serves + accepts the toggle's write),
+  `progress-tunnel.sh`, `progress-shot.mjs` (real-viewport screenshots), `progress-standalone.mjs`.
