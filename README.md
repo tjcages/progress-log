@@ -1,12 +1,14 @@
 # progress-log (a Claude Code skill)
 
-![The progress log — timestamped entries, status pills, branch badges, embedded media, and a live-preview toggle](assets/hero.png)
+![The progress log — a GitHub-repo-style layout: top bar, a left table-of-contents that tracks scroll, a centered feed of timestamped entries with status pills and branch badges, and a right About sidebar with quick actions](assets/hero.png)
 
 A reusable system that gives any repo a **persistent, user-facing progress log** — a
-self-contained `progress/index.html` that records every feature and build-out (newest
-first, status pills, condense + per-post delete, relative times), plus an **Architecture**
-tab that stays current. Optional one-tap live preview over a Cloudflare tunnel for viewing
-on your phone.
+self-contained `progress/index.html` laid out like a GitHub repo page: a **top bar**, a
+**left table-of-contents** that tracks scroll (sliding marker, click to jump), a **centered
+feed** of every feature and build-out (newest first, status pills, condense + per-post
+delete, relative times), and a **right About sidebar** with a description, an **All assets**
+grid, and quick actions. Plus an **Architecture** tab that stays current, and optional
+one-tap live preview over a Cloudflare tunnel for viewing on your phone.
 
 ## Where it lives
 A skill is just a folder Claude Code auto-discovers under `~/.claude/skills/`. This one is
