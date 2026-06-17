@@ -88,12 +88,14 @@
 
   /* (Masthead replaced by the topbar + feed-head — see the shell CSS lower down.) */
 
-  /* Sort toggle — plain text, no background; arrow matches the text colour. */
+  /* Feed actions — Expand all + sort, grouped at the right of the feed head. */
+  .feed-actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  /* Sort / expand toggles — plain text, no background; arrow matches the colour. */
   .sort {
-    margin-left: auto; font-family: var(--sans); font-size: var(--t-meta);
+    font-family: var(--sans); font-size: var(--t-meta);
     color: var(--fg-2); background: none; border: 0; padding: 2px;
     cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
-    transition: color .15s ease;
+    transition: color .15s ease; white-space: nowrap;
   }
   .sort:hover { color: var(--fg); }
   .sort .arrow { color: inherit; font-weight: 600; }
@@ -138,13 +140,16 @@
     font-family: var(--sans); font-size: var(--t-meta); color: var(--fg-2);
     margin-bottom: 9px;
   }
-  /* Branch — a GitHub ref chip (mono, hairline, links to the branch). */
+  /* Branch — a GitHub ref chip (mono, no border, tight radius; hovers green). */
   .branch {
     font-family: var(--mono); font-size: var(--t-meta); line-height: 18px;
-    color: var(--fg-2); background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--r-code); padding: 0 7px; white-space: nowrap; text-decoration: none;
+    color: var(--fg-2); background: var(--bg); border: 0;
+    border-radius: 5px; padding: 1px 7px; white-space: nowrap; text-decoration: none;
+    transition: color .15s ease, background .15s ease;
   }
-  a.branch:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  a.branch:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  /* Relative time — same muted tone as the "updated" marker beside it. */
+  .entry-head time { color: var(--fg-3); }
   /* "updated" marker — sits right after the time (left side), before status. */
   .entry-head .edited { order: 1; color: var(--fg-3); }
   .entry-head .edited:empty { display: none; }
@@ -152,7 +157,7 @@
   /* Status — soft tint pill: full-color text on a faint tint of that colour, no border. */
   .status {
     order: 3; margin-left: auto; font-size: var(--t-meta); font-weight: 600; line-height: 18px;
-    padding: 1px 9px; border-radius: var(--r-label); white-space: nowrap;
+    padding: 1px 9px; border-radius: 5px; white-space: nowrap;
   }
   .status[data-status="new"]    { color: var(--blue);  background: color-mix(in srgb, var(--blue) 12%, transparent); }
   .status[data-status="done"]   { color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
@@ -172,14 +177,16 @@
   .entry-body a { color: var(--accent); text-decoration: none; }
   .entry-body a:hover { text-decoration: underline; }
 
-  /* ── Media — sits between the title and the bullets ── */
+  /* ── Media — sits between the title and the bullets. The frame is on the
+        image itself so the caption can sit OUTSIDE, just below it. ── */
   .media { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 0 0 12px; }
   .media:empty { display: none; }
-  .media figure { margin: 0; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-img); padding: 6px; }
+  .media figure { margin: 0; }
   .media img, .media video {
-    width: 100%; height: auto; display: block; border-radius: calc(var(--r-img) - 3px);
+    width: 100%; height: auto; display: block;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-img);
   }
-  .media figcaption { font-size: var(--t-meta); color: var(--fg-3); margin: 6px 2px 1px; line-height: 1.4; }
+  .media figcaption { font-size: var(--t-meta); color: var(--fg-3); opacity: .75; margin: 7px 2px 0; line-height: 1.4; }
 
   /* ── Per-post delete — pops out to the RIGHT on 500ms hover, aligned to
         the status badge. Desktop only (needs room beside the card). ── */
@@ -353,8 +360,10 @@
 
   /* ── Collapsible entry details — bullets/media/branch tuck into a chin
         revealed by a Show/Hide toggle (open by default for new/wip work). ── */
+  /* Toolbar row holds the Show/Hide toggle + a "has image" indicator. */
+  .entry-toolbar { order: 2; margin: 4px 0 0; display: flex; align-items: center; gap: 8px; }
   .entry-toggle {
-    order: 2; align-self: flex-start; margin: 4px 0 0 -3px;
+    margin-left: -3px;
     display: inline-flex; align-items: center; gap: 5px;
     font-family: var(--sans); font-size: var(--t-meta); font-weight: 600;
     color: var(--fg-3); background: transparent; border: 0; border-radius: var(--r-code);
@@ -363,10 +372,16 @@
   .entry-toggle:hover { color: var(--fg-2); background: color-mix(in srgb, var(--fg) 5%, transparent); }
   .entry-toggle .et-chev { width: 13px; height: 13px; display: inline-flex; transition: transform .28s cubic-bezier(0.22,1,0.36,1); }
   .entry.open .entry-toggle .et-chev { transform: rotate(180deg); }
+  /* Tiny "this entry has an image" hint, right of the toggle. */
+  .has-media { display: inline-flex; align-items: center; color: var(--fg-3); }
+  .has-media svg { width: 13px; height: 13px; }
   .entry-details { order: 3; display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(0.22,1,0.36,1); }
   .entry.open .entry-details { grid-template-rows: 1fr; }
   .entry-details-inner { overflow: hidden; min-height: 0; }
   .entry.open .entry-details-inner { padding-top: 10px; }
+  /* Expanded details read in the full dark text colour. */
+  .entry-details .entry-body { color: var(--fg); }
+  .entry-details .entry-body li { color: var(--fg); }
   .entry-details .media { margin-bottom: 0; }
   .entry-details .media + .entry-body { margin-top: 12px; }
   .entry-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
@@ -411,7 +426,10 @@
     <main class="wrap">
       <div class="feed-head">
         <nav class="tabs"><a href="index.html" class="active" aria-current="page">Log</a><a href="architecture.html">Architecture</a><a href="stack.html">Tech stack</a></nav>
-        <button id="sort-toggle" class="sort" type="button" aria-pressed="true">Newest first <span class="arrow">↑</span></button>
+        <div class="feed-actions">
+          <button id="expand-all" class="sort" type="button" data-all-open="0">Expand all</button>
+          <button id="sort-toggle" class="sort" type="button" aria-pressed="true">Newest first <span class="arrow">↑</span></button>
+        </div>
       </div>
       <div class="entries">
       <!-- ENTRIES:START -->
@@ -941,11 +959,33 @@
 
     // Collapsible entry details — tuck bullets/media/branch into a chin behind a
     // Show/Hide toggle. Open by default for new/wip work, collapsed for settled.
-    // Applied at render time; the authored entry markup is unchanged.
+    // Applied at render time; the authored entry markup is unchanged. Also wires
+    // the feed-head "Expand all / Collapse all" control + a "has image" hint.
     (function () {
       var list = document.querySelector(".entries");
       if (!list) return;
       var CHEV = '<svg class="et-chev" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var IMG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var expandAll = document.getElementById("expand-all");
+
+      function toggleable() {
+        return Array.prototype.filter.call(list.querySelectorAll(":scope > .entry"), function (e) { return e.querySelector(".entry-toggle"); });
+      }
+      function setOpen(entry, open) {
+        entry.classList.toggle("open", open);
+        var btn = entry.querySelector(".entry-toggle");
+        if (btn) {
+          btn.setAttribute("aria-expanded", String(open));
+          var l = btn.querySelector(".et-label"); if (l) l.textContent = open ? "Hide details" : "Show details";
+        }
+      }
+      function syncExpandAll() {
+        if (!expandAll) return;
+        var es = toggleable();
+        var allOpen = es.length > 0 && es.every(function (e) { return e.classList.contains("open"); });
+        expandAll.dataset.allOpen = allOpen ? "1" : "0";
+        expandAll.textContent = allOpen ? "Collapse all" : "Expand all";
+      }
 
       function enhance(entry) {
         if (entry.dataset.collapsible) return;
@@ -970,26 +1010,36 @@
         details.appendChild(inner);
         entry.appendChild(details);
 
+        var bar = document.createElement("div"); bar.className = "entry-toolbar";
         var btn = document.createElement("button");
         btn.type = "button"; btn.className = "entry-toggle"; btn.setAttribute("aria-expanded", "false");
         var lab = document.createElement("span"); lab.className = "et-label"; lab.textContent = "Show details";
         btn.appendChild(lab); btn.insertAdjacentHTML("beforeend", CHEV);
-        entry.appendChild(btn);
-
-        function set(open) {
-          entry.classList.toggle("open", open);
-          btn.setAttribute("aria-expanded", String(open));
-          lab.textContent = open ? "Hide details" : "Show details";
+        bar.appendChild(btn);
+        if (hasMedia) {
+          var ind = document.createElement("span"); ind.className = "has-media";
+          ind.title = "This entry has an image"; ind.setAttribute("aria-label", "Has an image");
+          ind.innerHTML = IMG; bar.appendChild(ind);
         }
-        btn.addEventListener("click", function () { set(!entry.classList.contains("open")); });
+        entry.appendChild(bar);
+
+        btn.addEventListener("click", function () { setOpen(entry, !entry.classList.contains("open")); syncExpandAll(); });
 
         var st = entry.querySelector(".status");
         var s = st && st.getAttribute("data-status");
-        set(s === "new" || s === "wip");
+        setOpen(entry, s === "new" || s === "wip");
       }
-      function run() { Array.prototype.forEach.call(list.querySelectorAll(":scope > .entry"), enhance); }
+      function run() { Array.prototype.forEach.call(list.querySelectorAll(":scope > .entry"), enhance); syncExpandAll(); }
       run();
       new MutationObserver(run).observe(list, { childList: true });
+
+      if (expandAll) {
+        expandAll.addEventListener("click", function () {
+          var open = expandAll.dataset.allOpen !== "1";   // not all open → open all
+          toggleable().forEach(function (e) { setOpen(e, open); });
+          syncExpandAll();
+        });
+      }
     })();
 
     // Day separators — a tiny centered label between date groups. Today gets no

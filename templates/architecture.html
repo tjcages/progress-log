@@ -89,11 +89,13 @@
     padding: 14px 16px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 12px;
   }
-  .masthead h1 { font-size: var(--t-title); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .tabs { display: flex; gap: 3px; flex-basis: 100%; }
-  .tabs a { font-size: var(--t-meta); color: var(--fg-2); text-decoration: none; padding: 5px 12px; border-radius: 100px; }
-  .tabs a:hover { color: var(--fg); }
-  .tabs a.active { background: var(--primary); color: var(--fg); font-weight: 600; }
+  .repo { font-size: var(--t-title); font-weight: 600; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; }
+  .repo-sub { color: var(--fg-3); font-weight: 400; }
+  .repo:hover { color: var(--fg); }
+  .top-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-actions a { font-size: var(--t-meta); color: var(--fg-2); text-decoration: none; padding: 5px 11px; border-radius: 100px; border: 1px solid var(--line); transition: background .15s ease, color .15s ease; }
+  .top-actions a:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 4%, transparent); }
+  .top-actions a.active { color: var(--fg); font-weight: 600; background: color-mix(in srgb, var(--fg) 7%, transparent); border-color: color-mix(in srgb, var(--fg) 14%, transparent); }
 
   /* ── Buildout switcher — quiet text; selected = white pill ── */
   .arch-bar {
@@ -228,11 +230,13 @@
 <body>
   <div class="masthead">
     <div class="masthead-inner">
-      <h1>Architecture</h1>
-      <nav class="tabs">
-        <a href="index.html">Log</a>
+      <a class="repo" href="__REPO_URL__">__PROJECT__ <span class="repo-sub">/ progress</span></a>
+      <nav class="top-actions">
+        <a href="index.html">Trace</a>
         <a href="architecture.html" class="active" aria-current="page">Architecture</a>
         <a href="stack.html">Tech stack</a>
+        <a href="about.html">Readme</a>
+        <a href="__REPO_URL__">GitHub ↗</a>
       </nav>
     </div>
   </div>

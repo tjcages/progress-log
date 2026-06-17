@@ -6,6 +6,7 @@
 <title>Tech stack · Progress</title>
 <!--
   TECH-STACK PAGE  —  a plain-English "what is this repo built on" reference.
+  Shares the homepage shell (top bar · left scroll-spy TOC · right Pages rail).
   ┌─ THIS IS A TEMPLATE. On install it's a placeholder. FILL IT FROM THE REPO: ─┐
   │  • Read the manifests — package.json / pnpm-lock, requirements.txt /        │
   │    pyproject, go.mod, Cargo.toml, Gemfile, *.csproj, Package.swift, etc.    │
@@ -16,14 +17,16 @@
   └────────────────────────────────────────────────────────────────────────────┘
   Keep it CURRENT: when a dep/tool is added, removed, or major-version-bumped,
   update the matching card + the language bar. See progress/README.md →
-  "The tech-stack page (stack.html)". Style mirrors about.html — reuse its
-  classes, no new look.
+  "The tech-stack page (stack.html)".
 -->
 <style>
   :root {
     --bg: #f7f7f9; --primary: #ffffff; --fg: #1d1d1f; --fg-2: #6e6e73; --fg-3: #a1a1a6;
-    --green: #1f9d44; --blue: #007aff; --r-card: 12px; --r-code: 6px; --line: #ececef;
-    --code-bg: #f5f5f7; --code-fg: #2b2b30;
+    --accent: #28a745; --green: #1f9d44; --blue: #007aff;
+    --border: color-mix(in srgb, var(--fg) 8%, transparent);
+    --line: var(--border); --code-bg: #f5f5f7; --code-fg: #2b2b30;
+    --t-meta: 12px; --t-body: 14px; --t-title: 15px;
+    --r-card: 16px; --r-img: 12px; --r-code: 8px;
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
     --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     /* language colors — set per language (GitHub-style) */
@@ -31,19 +34,57 @@
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#1c1c1e; --primary:#2c2c2e; --fg:#f5f5f7; --fg-2:#98989d; --fg-3:#636366;
-      --green:#30d158; --blue:#0a84ff; --line:#3a3a3e; --code-bg:#1f1f21; --code-fg:#e3e3e6; }
+      --accent:#30d158; --green:#30d158; --blue:#0a84ff; --code-bg:#1f1f21; --code-fg:#e3e3e6; }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 660px; margin: 0 auto; padding: 24px 16px 96px; }
-  .masthead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .masthead h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .back { margin-left: auto; font-size: 12px; color: var(--fg-2); text-decoration: none; }
-  .back:hover { color: var(--fg); }
-  .lede { font-size: 14px; color: var(--fg-2); margin: 0 0 18px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: var(--t-body); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  /* ════ Repo-style shell: top bar + [ TOC · content · Pages ] ════ */
+  .topbar { border-bottom: 1px solid var(--border); background: var(--primary); position: sticky; top: 0; z-index: 20; }
+  .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+  .repo { font-size: var(--t-title); font-weight: 600; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; }
+  .repo-sub { color: var(--fg-3); font-weight: 400; }
+  .repo:hover { color: var(--fg); }
+  .top-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-actions a { font-size: var(--t-meta); color: var(--fg-2); text-decoration: none; padding: 5px 11px; border-radius: 100px; border: 1px solid var(--border); transition: background .15s ease, color .15s ease; }
+  .top-actions a:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 4%, transparent); }
+  .top-actions a.active { color: var(--fg); font-weight: 600; background: color-mix(in srgb, var(--fg) 7%, transparent); border-color: color-mix(in srgb, var(--fg) 14%, transparent); }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 24px 24px 96px; display: grid; grid-template-columns: 216px minmax(0, 640px) 280px; gap: 32px; justify-content: center; align-items: start; }
+
+  /* Left — table of contents (scroll-spy). */
+  .toc { position: sticky; top: 68px; align-self: start; }
+  .toc-inner { max-height: calc(100vh - 88px); overflow-y: auto; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22px, #000 calc(100% - 26px), transparent 100%);
+            mask-image: linear-gradient(180deg, transparent 0, #000 22px, #000 calc(100% - 26px), transparent 100%); }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc-head { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-3); padding: 2px 0 8px 13px; }
+  .toc-list { position: relative; display: flex; flex-direction: column; }
+  .toc-thumb { position: absolute; left: 0; top: 0; width: 2px; height: 0; background: var(--accent); border-radius: 2px; opacity: 0; transition: transform .22s cubic-bezier(0.22,1,0.36,1), height .22s ease, opacity .22s ease; }
+  .toc-list a { font-size: var(--t-meta); line-height: 1.35; color: var(--fg-2); text-decoration: none; padding: 6px 10px 6px 13px; border-radius: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease, background .15s ease; }
+  .toc-list a:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 4%, transparent); }
+  .toc-list a.active { color: var(--fg); font-weight: 600; }
+
+  /* Center — page header + content. */
+  .wrap { min-width: 0; }
+  .feed-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .feed-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .lede { font-size: var(--t-body); color: var(--fg-2); margin: -4px 0 16px; }
+
+  /* Right — Pages rail + About. */
+  .about { position: sticky; top: 68px; align-self: start; display: flex; flex-direction: column; gap: 22px; }
+  .about-sec { display: flex; flex-direction: column; gap: 9px; }
+  .about-title { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-3); margin: 0; }
+  .about-desc { font-size: var(--t-meta); line-height: 1.55; color: var(--fg-2); margin: 0; }
+  .qa { display: inline-flex; align-items: center; gap: 9px; font-family: var(--sans); font-size: var(--t-meta); color: var(--fg); text-decoration: none; text-align: left; background: var(--primary); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+  .qa:hover { background: color-mix(in srgb, var(--fg) 4%, transparent); border-color: color-mix(in srgb, var(--fg) 14%, transparent); }
+  .qa svg { width: 15px; height: 15px; color: var(--fg-2); flex: none; }
+  .qa.active { background: color-mix(in srgb, var(--fg) 6%, transparent); border-color: color-mix(in srgb, var(--fg) 16%, transparent); font-weight: 600; cursor: default; }
+  .qa.active svg { color: var(--fg); }
 
   /* ── Language bar (GitHub-style) ── */
-  .langwrap { background: var(--primary); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; margin-bottom: 10px; }
+  .langwrap { background: var(--primary); border: 1px solid var(--border); border-radius: var(--r-card); padding: 14px 16px; margin-bottom: 10px; }
   .langbar { display: flex; height: 9px; border-radius: 5px; overflow: hidden; background: var(--code-bg); }
   .langbar span { height: 100%; }
   .lang-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 11px; }
@@ -52,15 +93,9 @@
   .lang-legend b { color: var(--fg); font-weight: 600; }
   .lang-legend .pct { color: var(--fg-3); }
 
-  /* ── Expandable cards (mirrors about.html) ── */
-  details.card {
-    background: var(--primary); border: 1px solid var(--line); border-radius: var(--r-card);
-    margin-bottom: 10px; overflow: hidden;
-  }
-  summary {
-    display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none;
-    padding: 14px 16px; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
-  }
+  /* ── Expandable cards ── */
+  details.card { background: var(--primary); border: 1px solid var(--border); border-radius: var(--r-card); margin-bottom: 10px; overflow: hidden; scroll-margin-top: 80px; }
+  summary { display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; padding: 14px 16px; font-size: var(--t-body); font-weight: 600; letter-spacing: -0.01em; }
   summary::-webkit-details-marker { display: none; }
   summary .chev { width: 15px; height: 15px; flex: none; color: var(--fg-3); transition: transform .2s ease; }
   details[open] summary .chev { transform: rotate(180deg); }
@@ -69,21 +104,23 @@
   .body > :first-child { margin-top: 0; }
   .body > :last-child { margin-bottom: 0; }
   p { margin: 0 0 10px; }
-  ul { margin: 0 0 10px; padding-left: 18px; }
-  li { margin: 4px 0; color: var(--fg-2); }
-  li b, p b { color: var(--fg); font-weight: 600; }
-  p, .body { color: var(--fg-2); }
+  .body, .body p { color: var(--fg-2); }
+  .body b, .body p b { color: var(--fg); font-weight: 600; }
   code { font-family: var(--mono); font-size: 0.85em; color: var(--fg); background: var(--code-bg); border-radius: var(--r-code); padding: 1px 6px; }
   a { color: var(--blue); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
   /* ── Dependency rows (name · plain-English · version) ── */
   .deps { display: flex; flex-direction: column; }
-  .dep { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .dep { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
   .dep:first-child { border-top: 0; }
   .dep .nm { font-weight: 600; color: var(--fg); flex: none; min-width: 122px; letter-spacing: -0.01em; }
   .dep .ds { color: var(--fg-2); flex: 1; font-size: 13.5px; }
   .dep .ver { font-family: var(--mono); font-size: 11px; color: var(--fg-3); white-space: nowrap; flex: none; }
+
+  /* Responsive — drop the side rails when there's no room. */
+  @media (max-width: 1100px) { .page { grid-template-columns: 200px minmax(0, 640px); } .about { display: none; } }
+  @media (max-width: 860px) { .page { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 80px; gap: 0; } .toc { display: none; } .topbar-inner { padding: 12px 16px; } }
   @media (max-width: 460px) {
     .dep { flex-wrap: wrap; gap: 2px 10px; }
     .dep .nm { min-width: 0; }
@@ -92,54 +129,147 @@
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="masthead">
-      <h1>__PROJECT__ — tech stack</h1>
-      <a class="back" href="index.html">← Log</a>
-    </div>
-    <p class="lede">Everything this repo is built on — the languages, frameworks, and tools
-      behind it. Tap a section to expand.</p>
-
-    <!-- ── Language split (compute widths/percentages from byte share) ── -->
-    <div class="langwrap">
-      <div class="langbar">
-        <span style="width:60%;background:var(--l-1)"></span>
-        <span style="width:30%;background:var(--l-2)"></span>
-        <span style="width:10%;background:var(--l-3)"></span>
-      </div>
-      <div class="lang-legend">
-        <span class="li"><span class="dot" style="background:var(--l-1)"></span><b>Language A</b> <span class="pct">60%</span></span>
-        <span class="li"><span class="dot" style="background:var(--l-2)"></span><b>Language B</b> <span class="pct">30%</span></span>
-        <span class="li"><span class="dot" style="background:var(--l-3)"></span><b>Language C</b> <span class="pct">10%</span></span>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="repo" href="__REPO_URL__">__PROJECT__ <span class="repo-sub">/ progress</span></a>
+      <div class="top-actions">
+        <a href="index.html">Trace</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="stack.html" class="active" aria-current="page">Tech stack</a>
+        <a href="about.html">Readme</a>
+        <a href="__REPO_URL__">GitHub ↗</a>
       </div>
     </div>
+  </header>
 
-    <details class="card" open>
-      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> At a glance</summary>
-      <div class="body">
-        <p><b>Fill this in from the repo.</b> A one-paragraph summary of what the project is
-          built on, then a few headline rows below.</p>
-        <div class="deps">
-          <div class="dep"><span class="nm">Framework</span><span class="ds">the main app framework, in plain English</span><span class="ver">vX</span></div>
-          <div class="dep"><span class="nm">Data</span><span class="ds">where state lives</span><span class="ver">—</span></div>
-          <div class="dep"><span class="nm">Hosting</span><span class="ds">where it runs</span><span class="ver">—</span></div>
+  <div class="page">
+    <aside class="toc" aria-label="On this page">
+      <div class="toc-inner">
+        <div class="toc-head">On this page</div>
+        <nav class="toc-list" id="toc-list"><span class="toc-thumb" aria-hidden="true"></span></nav>
+      </div>
+    </aside>
+
+    <main class="wrap">
+      <div class="feed-head"><h1 class="feed-title">Tech stack</h1></div>
+      <p class="lede">Everything this repo is built on — the languages, frameworks, and tools
+        behind it. Tap a section to expand.</p>
+
+      <!-- ── Language split (compute widths/percentages from byte share) ── -->
+      <div class="langwrap">
+        <div class="langbar">
+          <span style="width:60%;background:var(--l-1)"></span>
+          <span style="width:30%;background:var(--l-2)"></span>
+          <span style="width:10%;background:var(--l-3)"></span>
+        </div>
+        <div class="lang-legend">
+          <span class="li"><span class="dot" style="background:var(--l-1)"></span><b>Language A</b> <span class="pct">60%</span></span>
+          <span class="li"><span class="dot" style="background:var(--l-2)"></span><b>Language B</b> <span class="pct">30%</span></span>
+          <span class="li"><span class="dot" style="background:var(--l-3)"></span><b>Language C</b> <span class="pct">10%</span></span>
         </div>
       </div>
-    </details>
 
-    <details class="card">
-      <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Languages <span class="tag">N</span></summary>
-      <div class="body">
-        <div class="deps">
-          <div class="dep"><span class="nm">Language A</span><span class="ds">what it's used for here</span><span class="ver">60%</span></div>
-          <div class="dep"><span class="nm">Language B</span><span class="ds">what it's used for here</span><span class="ver">30%</span></div>
+      <details class="card" open>
+        <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> At a glance</summary>
+        <div class="body">
+          <p><b>Fill this in from the repo.</b> A one-paragraph summary of what the project is
+            built on, then a few headline rows below.</p>
+          <div class="deps">
+            <div class="dep"><span class="nm">Framework</span><span class="ds">the main app framework, in plain English</span><span class="ver">vX</span></div>
+            <div class="dep"><span class="nm">Data</span><span class="ds">where state lives</span><span class="ver">—</span></div>
+            <div class="dep"><span class="nm">Hosting</span><span class="ds">where it runs</span><span class="ver">—</span></div>
+          </div>
         </div>
-      </div>
-    </details>
+      </details>
 
-    <!-- Add a card per area: framework & runtime, data, infra, UI, auth, AI,
-         tests, build/tooling… Each dep = a .dep row. Delete cards that don't apply. -->
+      <details class="card">
+        <summary><span class="chev"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Languages <span class="tag">N</span></summary>
+        <div class="body">
+          <div class="deps">
+            <div class="dep"><span class="nm">Language A</span><span class="ds">what it's used for here</span><span class="ver">60%</span></div>
+            <div class="dep"><span class="nm">Language B</span><span class="ds">what it's used for here</span><span class="ver">30%</span></div>
+          </div>
+        </div>
+      </details>
 
+      <!-- Add a card per area: framework & runtime, data, infra, UI, auth, AI,
+           tests, build/tooling… Each dep = a .dep row. Delete cards that don't apply. -->
+    </main>
+
+    <aside class="about">
+      <section class="about-sec">
+        <h2 class="about-title">Pages</h2>
+        <a class="qa" href="index.html">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Trace
+        </a>
+        <a class="qa" href="architecture.html">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.5" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18" r="2.5" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="6" r="2.5" stroke="currentColor" stroke-width="2"/><path d="M8.5 6H15.5M18 8.5v7M8 8l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Architecture
+        </a>
+        <a class="qa active" href="stack.html" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 7l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Tech stack
+        </a>
+        <a class="qa" href="about.html">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 4v5h5M8 13h8M8 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Readme
+        </a>
+      </section>
+      <section class="about-sec">
+        <h2 class="about-title">About this page</h2>
+        <p class="about-desc">A plain-English snapshot of the project's languages, frameworks, libraries &amp; tools. Kept current as the stack moves.</p>
+      </section>
+    </aside>
   </div>
+
+  <script>
+    // TOC scroll-spy over the cards (mirrors the Trace page's entry spy).
+    (function () {
+      var toc = document.getElementById("toc-list");
+      var tocInner = document.querySelector(".toc-inner");
+      if (!toc) return;
+      var thumb = toc.querySelector(".toc-thumb");
+      var cards = Array.prototype.slice.call(document.querySelectorAll("main .card"));
+      var links = [], active = null;
+      cards.forEach(function (c, i) {
+        if (!c.id) c.id = "c" + i;
+        var s = c.querySelector("summary");
+        var label = "Section " + (i + 1);
+        if (s) { var sc = s.cloneNode(true); var tg = sc.querySelector(".tag"); if (tg) tg.remove(); label = sc.textContent.replace(/\s+/g, " ").trim(); }
+        var a = document.createElement("a");
+        a.href = "#" + c.id; a.textContent = label;
+        a.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          if (!c.open) c.open = true;
+          c.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        toc.appendChild(a);
+        links.push({ a: a, el: c });
+      });
+      function spy() {
+        if (!links.length) return;
+        var cur = links[0];
+        for (var i = 0; i < links.length; i++) {
+          if (links[i].el.getBoundingClientRect().top - 120 <= 0) cur = links[i]; else break;
+        }
+        thumb.style.opacity = "1";
+        thumb.style.height = cur.a.offsetHeight + "px";
+        thumb.style.transform = "translateY(" + cur.a.offsetTop + "px)";
+        if (cur.a !== active) {
+          if (active) active.classList.remove("active");
+          active = cur.a; active.classList.add("active");
+          if (tocInner && tocInner.scrollHeight > tocInner.clientHeight + 4) {
+            tocInner.scrollTo({ top: active.offsetTop - tocInner.clientHeight / 2, behavior: "smooth" });
+          }
+        }
+      }
+      var ticking = false;
+      function schedule() { if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; spy(); }); } }
+      window.addEventListener("scroll", schedule, { passive: true });
+      window.addEventListener("resize", schedule);
+      spy();
+    })();
+  </script>
 </body>
 </html>
