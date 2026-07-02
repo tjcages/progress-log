@@ -6,6 +6,10 @@ lives in its `progress/` log; this file is the release-tagged summary.
 
 ## [Unreleased]
 - Extracted to a standalone repo at `~/Workspace/traces` (symlinked into `~/.claude/skills/`).
+- Distribution scaffolding: `LICENSE`, `VERSION`, `CHANGELOG`, `.gitignore`, `scripts/package.sh`.
+- Self-hosts its own progress log (`progress/`) as the engine dogfood surface.
+- `scripts/sync-engine.mjs` — safely move the engine between the template and a live install
+  (push/pull), preserving entries + About, with validation and `.bak` backups.
 
 ## [0.1.0] — 2026-07-02
 First versioned cut. The engine and installer as they stand today.

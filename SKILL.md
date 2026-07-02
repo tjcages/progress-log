@@ -83,5 +83,10 @@ changes when the tunnel restarts).
   (repo-agnostic React-Flow renderer) + `architectures.data.js` (seed), `about.html` (the
   in-page readme), `stack.html` (the tech-stack page — seeded as a fill-in placeholder),
   `README.md` (full protocol), `preview.json`, `claude-block.md` (the injected rule).
-- `scripts/` — `install.sh`, `progress-server.py` (serves + accepts the toggle's write),
-  `progress-tunnel.sh`, `progress-shot.mjs` (real-viewport screenshots), `progress-standalone.mjs`.
+- `scripts/` — `install.sh`, `sync-engine.mjs` (push/pull the engine between the template and
+  an install without touching its entries), `progress-server.py` (serves + accepts the toggle's
+  write), `progress-tunnel.sh`, `progress-shot.mjs` (real-viewport screenshots),
+  `progress-standalone.mjs`, `package.sh` (build the distributable `.skill`).
+
+To ship an engine improvement to existing installs, edit `templates/index.html` then
+`node scripts/sync-engine.mjs push <repo>` (validates + backs up; preserves entries + About).

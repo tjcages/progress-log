@@ -55,5 +55,21 @@ It's a repo — clone or copy it.
 - `templates/` — `index.html` (the log engine), `architecture.html` + `architectures.data.js`
   (the Architecture tab), `about.html` (in-page guide), `README.md` (the protocol),
   `preview.json`, `claude-block.md` (the injected rule).
-- `scripts/` — `install.sh`, `progress-server.py` (serves + accepts the checkbox write),
-  `progress-tunnel.sh`, `progress-shot.mjs` (real-viewport screenshots), `progress-standalone.mjs`.
+- `scripts/` — `install.sh`, `sync-engine.mjs` (move the engine between the template and a
+  live install without touching its entries — see below), `progress-server.py` (serves +
+  accepts the checkbox write), `progress-tunnel.sh`, `progress-shot.mjs` (real-viewport
+  screenshots), `progress-standalone.mjs`, `package.sh` (build the `.skill` bundle).
+
+## Improving the engine (dogfood loop)
+This repo **self-hosts** its own log (`progress/`), so you can iterate the engine against a
+real page. `index.html` fuses engine + data in one self-contained file, and `install.sh`
+won't overwrite an install's `index.html` (it would wipe entries) — so `sync-engine.mjs`
+does the safe splice, validating + backing up every write:
+```bash
+node scripts/sync-engine.mjs push <repo>   # ship an engine update INTO an install (keeps its entries + About)
+node scripts/sync-engine.mjs pull <repo>   # capture engine work done IN an install back into the template
+#                                 …add --dry to preview without writing
+```
+Typical loop: edit `templates/index.html` → `push .` to preview on the self-host → `push`
+to consumers (e.g. socials). The sibling engine pages (`architecture.html`, `about.html`)
+refresh via `install.sh`.
